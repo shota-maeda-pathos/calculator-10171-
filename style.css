@@ -1,0 +1,93 @@
+*{
+    box-sizing: border-box;
+}
+/* ボディの設定 */
+body{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #0a0a0a;
+    font-family: Arial, sans-serif;
+}
+/* 計算機の設定 */
+.calculator{
+    background-color: #7a7d7e;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    width: 300px;
+    text-align: center;
+}
+/* ディスプレイの設定 */
+#display {
+    width: 100%;
+    height: 50px;
+    background-color: #e5eef5;
+    border: none;
+    border-radius: 5px;
+    font-size: 35px;
+    text-align: right;
+    margin-bottom: 15px;
+    padding: 0 10px;
+    color: #333;
+  }
+/* ボタンエリアの設定 */
+.buttons{
+    margin-top: 10px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-gap: 10px;
+}
+/* ボタンの設定 */
+button{
+    height: 35px;
+    font-size: 20px;
+    background-color: #f0f0f0;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+/*ボタンの色設定*/
+button[data-value="AC"],
+button[data-value="+/-"],
+button[data-value="%"] {
+    background-color: #c5c3c0;
+    color: #070707;
+}
+button[data-value="AC"]:hover,
+button[data-value="+/-"]:hover,
+button[data-value="%"]:hover {
+    background-color: #a19f9d;
+}
+button[data-value="/"],
+button[data-value="*"],
+button[data-value="-"],
+button[data-value="+"] {
+    background-color: #f5923e;
+    color: #fff;
+}
+button[data-value="/"]:hover,
+button[data-value="*"]:hover,
+button[data-value="-"]:hover,
+button[data-value="+"]:hover {
+    background-color: #d4883d;
+}
+button[data-value="="] {
+    background-color: #33cc26;
+    color: #fff;
+}
+button[data-value="="]:hover {
+    background-color: #28bd23;
+}
+/* ボタンのホバー時の設定 */
+button:hover{
+    background-color: #e0e0e0;
+}
+/* ボタンを押した時の設定 */
+button:active {
+    transform: scale(0.95);
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+}
