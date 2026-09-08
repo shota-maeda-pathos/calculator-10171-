@@ -1,10 +1,14 @@
 const display = document.getElementById('display') as HTMLInputElement;
 const buttons = document.querySelectorAll('button') as NodeListOf<HTMLButtonElement>;
+const clearButton = document.getElementById('clear-btn') as HTMLButtonElement;
 
 let currentInput: string = "";
 let operator: string | null = null;
 let previousInput: string | null = null;
 let isResultDisplayed: boolean = false;
+let lastOperator: string | null = null;
+let lastOperand: string | null = null;
+let isEqualRepeating: boolean = false;
 
 //表示を更新する関数
 function updateDisplay() {
@@ -17,11 +21,26 @@ function clearDisplay() {
     operator = null;
     previousInput = null;
     isResultDisplayed = false;
+    lastOperator = null;
+    lastOperand = null;
+    isEqualRepeating = false;
+    clearButton.textContent = "AC";
+    clearButton.setAttribute('data-value', 'AC');
     updateDisplay();
+}
+
+//現在の入力だけをクリアする関数
+function clearEntry() {
+    currentInput = "0";
+    isEqualRepeating = false;
+    updateDisplay();
+    clearButton.textContent = "AC";
+    clearButton.setAttribute('data-value', 'AC');
 }
 
 //数字を入力する関数
 function appendNumber(value: string) {
+    isEqualRepeating = false;
     if (isResultDisplayed) {
         currentInput = "";
         isResultDisplayed = false;
@@ -30,16 +49,21 @@ function appendNumber(value: string) {
     //何もないときに.を入れた場合は0.を追加する
     if (currentInput === "" && value === '.') {
         currentInput = "0.";
+        clearButton.textContent = "C";
+        clearButton.setAttribute('data-value', 'C');
         updateDisplay();
         return;
     }
-    //10桁でストップする
-    const integerPart = currentInput.split('.')[0].replace('-','');
-    if (integerPart.length + value.length > 10 && value !== '.') {
+        // 全体の桁数制限
+    if (currentInput.replace('-', '').replace('.', '').length + value.length > 10) {
         return;
     }
-    if (currentInput.replace('-','').length > 10) {
-        return;
+    // 小数第8位までの制限
+    if (currentInput.includes('.')) {
+        const fractionalPart = currentInput.split('.')[1] ?? "";
+        if (fractionalPart.length + value.length > 8) {
+            return;
+        }   
     }
     //00を入れた場合は0のまま
     if ((currentInput === "" || currentInput === "0") && value === "00") {
@@ -55,12 +79,20 @@ function appendNumber(value: string) {
     currentInput += value;
     }
     updateDisplay();
+    if (currentInput !== "0" && currentInput !== "") {
+        clearButton.textContent = "C";
+        clearButton.setAttribute('data-value', 'C');
+    }
 }
 
 //演算子を設定する関数
 function setOperator(value: string) {
+    isEqualRepeating = false;
     if (currentInput === ""){
         if (previousInput !== null){
+            operator = value;
+        } else {
+            previousInput = "0";
             operator = value;
         }
         return;
@@ -72,15 +104,35 @@ function setOperator(value: string) {
     operator = value;
     currentInput = "";
     isResultDisplayed = false;
+    isEqualRepeating = false;
 }
 
 //計算を実行する関数
 function calculateResult() {
-    if (!previousInput || !currentInput || !operator) return;
-    const num1 = parseFloat(previousInput);
-    const num2 = parseFloat(currentInput);
-    let result = 0;
-    switch (operator) {
+    let num1: number;
+    let num2: number;
+    let activeOperator: string;
+    if (isEqualRepeating && lastOperator && lastOperand) {
+        num1 = parseFloat(currentInput);
+        num2 = parseFloat(lastOperand);
+        activeOperator = lastOperator;
+    } else {
+        if (!previousInput || !operator){
+            isResultDisplayed = true;
+            return;
+        }
+        if (currentInput === "") {
+            currentInput = previousInput;
+        }
+        num1 = parseFloat(previousInput);
+        num2 = parseFloat(currentInput);
+        activeOperator = operator;
+        lastOperator = operator;
+        lastOperand = currentInput;
+        isEqualRepeating = true;
+    }
+    let result: number = 0;
+    switch (activeOperator) {
         case '+':
             result = num1 + num2;
             break;
@@ -93,6 +145,8 @@ function calculateResult() {
         case '/':
             if (num2 === 0) {
                 currentInput = "Error";
+                clearButton.textContent = "AC";
+                clearButton.setAttribute('data-value', 'AC');
                 updateDisplay();
                 return;
             }   
@@ -101,13 +155,18 @@ function calculateResult() {
             }
             break;
     }
-    result = parseFloat(result.toFixed(8));
-    const integerPart = result.toString().split('.')[0].replace('-','');
+    let resultStr = result.toFixed(8);
+    if(resultStr.includes('.')) {
+        resultStr = resultStr.replace(/0+$/, '').replace(/\.$/, '');
+    }
+    if (resultStr === "-0") resultStr = "0";
+    const integerPart = (resultStr.split('.')[0] ?? "").replace('-','');
     if(integerPart.length > 10){
         currentInput = "Error";
+        clearButton.textContent = "AC";
+        clearButton.setAttribute('data-value', 'AC');
     }
     else {
-        let resultStr = result.toString();
         let maxLength = 10;
         if (resultStr.includes('.')) maxLength += 1;
         if (resultStr.startsWith('-')) maxLength += 1;
@@ -122,6 +181,8 @@ function calculateResult() {
     operator = null;
     previousInput = null;
     isResultDisplayed = true;
+    clearButton.textContent = "AC";
+    clearButton.setAttribute('data-value', 'AC');
     updateDisplay();
 }
 
@@ -138,20 +199,18 @@ function applyPercentage() {
     //小数点以下8桁までにおさめる
     let num = parseFloat(currentInput);
     let percentValue = 0;
-    if (previousInput && operator) {
+    if(previousInput !==null && operator !== null){
         if (operator === '+' || operator === '-') {
-        percentValue = parseFloat(previousInput) * (num / 100);
+            percentValue = parseFloat(previousInput) * (num / 100);
         } else {
             percentValue = num / 100;
         }
     } else {
         percentValue = num / 100;
     }
-    percentValue = parseFloat(percentValue.toFixed(8));
-    let resultStr = percentValue.toString();
-    //指数表記の場合は0にする
-    if (resultStr.includes('e')) {
-        resultStr = "0"
+    let resultStr = percentValue.toFixed(8);
+    if (resultStr .includes('.')) {
+    resultStr = resultStr.replace(/0+$/, '').replace(/\.$/, '');
     }
     //10桁でストップする
     let maxLength = 10;
@@ -165,6 +224,7 @@ function applyPercentage() {
     }
     currentInput = resultStr;
     updateDisplay();
+    isResultDisplayed = true;
 }
 
 //ボタンをクリックしたときの処理
@@ -172,12 +232,18 @@ buttons.forEach(button => {
     button.addEventListener('click', () => {
         const value = button.getAttribute('data-value');
         if (!value) return;
-        if (currentInput === "Error" && value !== 'AC') {
+        if (currentInput === "Error"){
+            if (value === 'AC' || value === 'C') {
+                clearDisplay();
+            }
             return;
         }
         if (value === 'AC') {
             clearDisplay();
         } 
+        else if (value === 'C') {
+            clearEntry();
+        }
         else if (value === '+/-') {
             toggleSign();
         } 
